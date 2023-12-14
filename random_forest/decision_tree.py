@@ -43,12 +43,14 @@ class DecisionTree:
         min_impurity_decrease: float = 0.0,
         random_state: int | None = None,
         max_features: int | float | str | None = None,
+        max_depth: int | None = None,
     ):
         self.root = None
         self.config = {
             "min_samples_split": min_samples_split,
             "min_samples_leaf": min_samples_leaf,
             "min_impurity_decrease": min_impurity_decrease,
+            "max_depth": max_depth,
         }
         if random_state:
             np.random.seed(random_state)
@@ -63,6 +65,7 @@ class DecisionTree:
             curr_node = bfs_queue.get()
             if curr_node:
                 left, right = curr_node.create_children()
+
                 if left:
                     node_num += 1
                     left.node_num = node_num
@@ -74,6 +77,8 @@ class DecisionTree:
 
     def evaluate(self, X: np.ndarray) -> np.ndarray:
         evaluate_row = lambda row: self.evaluate_point(row)
+        if self.root is None:
+            raise RuntimeError("Decision tree has not been trained yet.")
         ret = np.apply_along_axis(self.evaluate_point, axis=1, arr=X)
         return ret
 
@@ -97,6 +102,7 @@ class DecisionTreeNode:
         y: np.ndarray,
         config: dict,
         node_num: int | None = None,
+        depth: int = 1,
     ):
         self.indices = indices
         self.X = X
@@ -106,9 +112,12 @@ class DecisionTreeNode:
         self.ssr = None
         self.col_num = None
         self.split_value = None
-        self.average = float(np.average(y[indices]))
+        # if not indices.empty():
+        if indices.shape[0] > 0:
+            self.average = float(np.average(y[indices]))
         self.config = config
         self.node_num = node_num
+        self.depth = depth
 
     def json(self) -> dict:
         ret = {
@@ -160,6 +169,8 @@ class DecisionTreeNode:
             return None, None
 
         left, right = self.get_split_nodes()
+        left.depth = self.depth + 1
+        right.depth = self.depth + 1
         # min_samples_leaf: int
         if isinstance(self.config["min_samples_leaf"], int):
             min_samples_leaf = self.config["min_samples_leaf"]
@@ -171,8 +182,12 @@ class DecisionTreeNode:
             raise TypeError("min_samples_leaf needs to be a float or an int")
 
         if (
-            len(list(left.indices)) < self.config["min_samples_leaf"]
-            or len(list(right.indices)) < self.config["min_samples_leaf"]
+            len(list(left.indices)) < min_samples_leaf
+            or len(list(right.indices)) < min_samples_leaf
+            or (
+                isinstance(self.config["max_depth"], int)
+                and self.depth > self.config["max_depth"]
+            )
         ):
             return None, None
 
@@ -209,8 +224,12 @@ class DecisionTreeNode:
     def get_split_nodes(self) -> Tuple["DecisionTreeNode", "DecisionTreeNode"]:
         # split = self.get_best_split(self.X[self.indices], self.y[self.indices])
         split = self.get_best_split(self.X, self.y)
-        left_idx = np.where(self.X[:, split["col_num"]] < split["split_value"])
-        right_idx = np.where(self.X[:, split["col_num"]] >= split["split_value"])
+        left_idx = np.array(
+            np.where(self.X[:, split["col_num"]] < split["split_value"])
+        )
+        right_idx = np.array(
+            np.where(self.X[:, split["col_num"]] >= split["split_value"])
+        )
 
         left_idx = np.intersect1d(left_idx, np.array(self.indices))
         right_idx = np.intersect1d(right_idx, np.array(self.indices))
@@ -240,7 +259,7 @@ class DecisionTreeNode:
         return best_split
 
     def best_split_feature(self, feature_array: np.ndarray, label_array: np.ndarray):
-        print(feature_array.shape)
+        # print(feature_array.shape)
         array_to_split = np.column_stack(
             (util.get_1d(feature_array), util.get_1d(label_array))
         )
