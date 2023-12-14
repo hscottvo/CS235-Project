@@ -71,7 +71,7 @@ class RandomForest:
             curr_tree.fit(X_sample, y_sample)
             self.estimators.append(curr_tree)
 
-    def evaluate(self, X: np.ndarray):
+    def predict(self, X: np.ndarray):
         if self.num_features != X.shape[1]:
             raise ValueError("Data does not match the training data shape")
         elif not self.estimators:
