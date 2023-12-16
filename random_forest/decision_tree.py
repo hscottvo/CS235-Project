@@ -6,21 +6,7 @@ from queue import Queue
 import math
 
 
-def mse_split(vals_array: np.ndarray, indices: list[int]) -> float:
-    array = util.get_1d(vals_array)
-    if array.shape[0] == 0:
-        return 0
-
-    subarray = array[indices]
-    avg_val = np.average(subarray)
-
-    squared_error = (subarray - avg_val) ** 2
-
-    mean_squared_error = np.average(squared_error)
-
-    return float(mean_squared_error)
-
-
+# Get the MSE of a subsample of the data to calculate how good of a split it is
 def mse_split(vals_array: np.ndarray) -> float:
     array = util.get_1d(vals_array)
     if array.shape[0] == 0:
@@ -35,6 +21,7 @@ def mse_split(vals_array: np.ndarray) -> float:
     return float(mse)
 
 
+# Class for the estimators that random forest uses
 class DecisionTree:
     def __init__(
         self,
@@ -95,6 +82,7 @@ class DecisionTree:
         return self.root.json()
 
 
+# individual node in the decision tree
 class DecisionTreeNode:
     def __init__(
         self,

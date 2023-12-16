@@ -2,15 +2,16 @@ from statistics import mean
 
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-from sklearn.metrics import mean_squared_error
+from decision_tree import DecisionTree
 from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.metrics import mean_squared_error
 from sklearn.utils import check_X_y
+from tqdm import tqdm
 
 import util
-from decision_tree import DecisionTree
 
 
+# main class for the estimator
 class RandomForest:
     def __init__(
         self,
