@@ -21,18 +21,18 @@ def mse_split(vals_array: np.ndarray, indices: list[int]) -> float:
     return float(mean_squared_error)
 
 
-def ssr_split(vals_array: np.ndarray) -> float:
+def mse_split(vals_array: np.ndarray) -> float:
     array = util.get_1d(vals_array)
     if array.shape[0] == 0:
         return 0
 
     avg_val = np.average(array)
 
-    squared_residual = (array - avg_val) ** 2
+    error = array - avg_val
 
-    sum_squared_residual = np.sum(squared_residual)
+    mse = np.mean(error**2)
 
-    return float(sum_squared_residual)
+    return float(mse)
 
 
 class DecisionTree:
@@ -54,6 +54,7 @@ class DecisionTree:
         }
         if random_state:
             np.random.seed(random_state)
+        self.depth = 0
 
     def fit(self, X, y) -> None:
         bfs_queue = Queue()
@@ -65,7 +66,7 @@ class DecisionTree:
             curr_node = bfs_queue.get()
             if curr_node:
                 left, right = curr_node.create_children()
-
+                self.depth = max(self.depth, curr_node.depth)
                 if left:
                     node_num += 1
                     left.node_num = node_num
@@ -109,7 +110,7 @@ class DecisionTreeNode:
         self.y = y
         self.left_child = None
         self.right_child = None
-        self.ssr = None
+        self.mse = None
         self.col_num = None
         self.split_value = None
         # if not indices.empty():
@@ -241,7 +242,7 @@ class DecisionTreeNode:
         )
 
     def get_best_split(self, feature_array: np.ndarray, label_array: np.ndarray):
-        ssr_splits_per_feature = []
+        mse_splits_per_feature = []
         for i in range(feature_array.shape[1]):
             ith_feature_split = self.best_split_feature(
                 # feature_array[:, i], label_array
@@ -249,11 +250,11 @@ class DecisionTreeNode:
                 label_array[self.indices],
             )
             ith_feature_split["col_num"] = i
-            ssr_splits_per_feature.append(ith_feature_split)
-        sorted_list = sorted(ssr_splits_per_feature, key=lambda x: x["ssr"])
+            mse_splits_per_feature.append(ith_feature_split)
+        sorted_list = sorted(mse_splits_per_feature, key=lambda x: x["mse"])
         best_split = sorted_list[0]
         # print(sorted_list)
-        self.ssr = best_split["ssr"]
+        self.mse = best_split["mse"]
         self.col_num = best_split["col_num"]
         self.split_value = best_split["split_value"]
         return best_split
@@ -267,27 +268,27 @@ class DecisionTreeNode:
 
         split_candidates = self.get_split_candidates(sorted_array[:, 0])
         min_candidate_value = None
-        min_candidate_ssr = np.inf
+        min_candidate_mse = np.inf
         for split_value in split_candidates:
             index = np.searchsorted(sorted_array[:, 0], split_value)
 
             left_array = sorted_array[:index, :]
             right_array = sorted_array[index:, :]
 
-            candidate_ssr = self.get_candidate_ssr(left_array, right_array)
+            candidate_mse = self.get_candidate_mse(left_array, right_array)
 
-            if min_candidate_ssr > candidate_ssr:
+            if min_candidate_mse > candidate_mse:
                 min_candidate_value = split_value
-                min_candidate_ssr = candidate_ssr
-        return {"ssr": min_candidate_ssr, "split_value": min_candidate_value}
+                min_candidate_mse = candidate_mse
+        return {"mse": min_candidate_mse, "split_value": min_candidate_value}
 
     def get_split_candidates(self, feature_array: np.ndarray):
         return (feature_array[1:] + feature_array[:-1]) / 2.0
 
-    def get_candidate_ssr(
+    def get_candidate_mse(
         self, left_array: np.ndarray, right_array: np.ndarray
     ) -> float:
-        left_ssr = ssr_split(left_array[:, 1])
-        right_ssr = ssr_split(right_array[:, 1])
+        left_mse = mse_split(left_array[:, 1])
+        right_mse = mse_split(right_array[:, 1])
 
-        return left_ssr + right_ssr
+        return left_mse + right_mse

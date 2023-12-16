@@ -3,6 +3,9 @@ from statistics import mean
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from sklearn.metrics import mean_squared_error
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.utils import check_X_y
 
 import util
 from decision_tree import DecisionTree
@@ -11,7 +14,7 @@ from decision_tree import DecisionTree
 class RandomForest:
     def __init__(
         self,
-        n_estimators: int = 100,
+        n_estimators: int = 10,
         min_samples_split: int | float = 2,
         min_samples_leaf: int | float = 1,
         min_impurity_decrease: float = 0.0,
@@ -33,14 +36,10 @@ class RandomForest:
 
         self.n_estimators = n_estimators
 
+    def fit(self, X, y):
         self.estimators = []
-
-    def fit(self, X, y) -> None:
         self.num_features = X.shape[1]
-        if X.shape[0] != y.shape[0]:
-            raise ValueError(
-                "Features and labels do not have the same number of samples"
-            )
+        X, y = check_X_y(X, y)
         if self.max_samples is None or self.bootstrap is False:
             max_samples = X.shape[0]
         elif isinstance(self.max_samples, int):
@@ -70,6 +69,7 @@ class RandomForest:
             y_sample = y[indices]
             curr_tree.fit(X_sample, y_sample)
             self.estimators.append(curr_tree)
+        return self
 
     def predict(self, X: np.ndarray):
         if self.num_features != X.shape[1]:
@@ -82,3 +82,20 @@ class RandomForest:
         )
         ret = predictions.mean(axis=0)
         return ret
+
+    def score(self, X, y):
+        # from https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html
+        pred = self.predict(X)
+        rss = ((y - pred) ** 2).sum()
+        tss = ((y - y.mean()) ** 2).sum()
+        r_squared = 1 - (rss / tss)
+        return r_squared
+
+    def classify(self, X: np.ndarray):
+        return np.sign(self.predict(X))
+
+    def get_params(self, deep=False):
+        return {"n_estimators": self.n_estimators}
+
+    def depth(self):
+        return max([i.depth for i in self.estimators])

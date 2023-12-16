@@ -27,14 +27,40 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 
 args = {"n_estimators": 10, "max_depth": 5}
+# max_depth_df = pd.DataFrame(columns=["implementation", "max_depth", "rmse"])
+# for i in [5, 10, 15]:
+#     scott_rf = RandomForest(n_estimators=10, max_depth=i)
+#     sklearn_rf = RandomForestRegressor(n_estimators=10, max_depth=i)
 
-scott_rf = RandomForest(**args)
-sklearn_rf = RandomForestRegressor(**args)
+#     scott_rf.fit(X_train.values, y_train.values)
+#     sklearn_rf.fit(X_train.values, y_train.values)
 
-scott_rf.fit(X_train.values, y_train.values)
-sklearn_rf.fit(X_train.values, y_train.values)
+#     scott_pred = scott_rf.predict(X_test.values)
+#     sklearn_pred = sklearn_rf.predict(X_test.values)
+#     rmse_scott = mean_squared_error(scott_pred, y_test, squared=False)
+#     rmse_sklearn = mean_squared_error(sklearn_pred, y_test, squared=False)
 
-scott_pred = scott_rf.predict(X_test.values)
-sklearn_pred = sklearn_rf.predict(X_test.values)
+#     new_data = pd.DataFrame(
+#         {
+#             "implementation": ["from_scratch", "sklearn"],
+#             "max_depth": [i, i],
+#             "rmse": [rmse_scott, rmse_sklearn],
+#         }
+#     )
+#     max_depth_df = pd.concat([max_depth_df, new_data])
+# print(max_depth_df)
 
-print(mean_squared_error(scott_pred, sklearn_pred, squared=True))
+scott_rf = RandomForest(n_estimators=3)
+# sklearn_rf = RandomForestRegressor(n_estimators=10)
+
+# scott_rf.fit(X_train.values, y_train.values)
+# sklearn_rf.fit(X_train.values, y_train.values)
+
+# scott_pred = scott_rf.predict(X_test.values)
+# sklearn_pred = sklearn_rf.predict(X_test.values)
+# rmse_scott = mean_squared_error(scott_pred, y_test, squared=False)
+# rmse_sklearn = mean_squared_error(sklearn_pred, y_test, squared=False)
+
+# print(rmse_scott)
+# print(rmse_sklearn)
+# print(scott_rf.depth())
